@@ -37,7 +37,7 @@ def generate_quickchart_url(address: str, name: str, days: int = 7) -> str:
         return ""
 
     dates = [datetime.strptime(item['date'], '%Y-%m-%d').strftime('%m-%d') for item in data]
-    balances = [int(item['balance']) / 10**18 for item in data]  # Adjust division as per your token's decimal precision
+    balances = [int(item['balance']) / 10**18 for item in data]  
 
     # Define the chart configuration
     chart_config = {
@@ -46,7 +46,7 @@ def generate_quickchart_url(address: str, name: str, days: int = 7) -> str:
             "labels": dates,
             "datasets": [{
                 "data": balances,
-                "fill": True,  # Set fill to True if you want the area under the line filled
+                "fill": True,  
                 "backgroundColor": "rgba(114, 137, 218, 0.1)",
                 "borderColor": "rgb(114, 137, 218)",
                 "pointBackgroundColor": "rgb(114, 137, 218)",
@@ -57,7 +57,7 @@ def generate_quickchart_url(address: str, name: str, days: int = 7) -> str:
         },
         "options": {
             "legend": {
-                "display": False  # This will remove the dataset label (legend) from the chart
+                "display": False  
             },
             "title": {
                 "display": True,
@@ -67,19 +67,19 @@ def generate_quickchart_url(address: str, name: str, days: int = 7) -> str:
             "scales": {
                 "yAxes": [{
                     "gridLines": {
-                        "color": "#444444"  # Changed grid lines color to a darker shade for better visibility
+                        "color": "#444444"  
                     },
                     "ticks": {
-                        "beginAtZero": False,  # Allows the y-axis to start at the minimum data value
-                        "fontColor": "#ffffff"  # Ticks font color set to white
+                        "beginAtZero": False,  
+                        "fontColor": "#ffffff"  
                     }
                 }],
                 "xAxes": [{
                     "gridLines": {
-                        "color": "#444444"  # Changed grid lines color to a darker shade for better visibility
+                        "color": "#444444"  
                     },
                     "ticks": {
-                        "fontColor": "#ffffff"  # Ticks font color set to white
+                        "fontColor": "#ffffff"
                     }
                 }]
             },
