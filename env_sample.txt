@@ -1,0 +1,7 @@
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/............
+WALLET_1_ADDRESS=st.........
+WALLET_1_NAME= Subspace Farmer
+# Add more wallets as needed (EX: WALLET_2_ADDRESS, WALLET_1_NAME= etc, etc.)
+NODE_IP=127.0.0.1 #Defaults to 127.0.0.1 if blank.
+NODE_PORT=9944  #Defaults to 994 if blank.
+WAIT_PERIOD=300 #Defaults to 300 seconds if blank.
