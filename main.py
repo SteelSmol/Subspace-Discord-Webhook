@@ -3,7 +3,8 @@ import os
 import requests
 import time
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
+import pytz
 from dotenv import load_dotenv
 from substrateinterface import SubstrateInterface
 from typing import Dict, Optional
@@ -40,38 +41,43 @@ def load_wallets() -> Dict[str, str]:
 def query_wallet(wallet_address: str) -> dict:
     return substrate.query("System", "Account", [wallet_address])
 
-def fetch_daily_gains(address: str) -> float:
-    # Fetch the balance history from the API for the given address
-    end_date = datetime.utcnow()
-    start_date = datetime(2024, 2, 14)  # Adjust the start date as necessary
-    url = "https://subspace.webapi.subscan.io/api/scan/account/balance_history"
-    payload = json.dumps({"address": address, "start": start_date.strftime('%Y-%m-%d'), "end": end_date.strftime('%Y-%m-%d')})
-    headers = {'User-Agent': 'Apidog/1.0.0 (https://apidog.com)', 'Content-Type': 'application/json'}
-    response = requests.post(url, data=payload, headers=headers)
-    
+def fetch_daily_gains(address: str) -> str:
+    # Calculate the Unix timestamp for the previous day at 23:59 UTC
+    previous_day_timestamp = datetime.now(pytz.utc) - timedelta(days=1)
+    previous_day_timestamp = previous_day_timestamp.replace(hour=23, minute=59, second=0, microsecond=0)
+    unix_timestamp = int(previous_day_timestamp.timestamp())
+
+    # Use the Subscan API to find the closest block number
+    url = "https://subspace.api.subscan.io/api/scan/block"
+    headers = {"Content-Type": "application/json", "Accept": "application/json"}
+    payload = {"block_timestamp": unix_timestamp}
+
+    response = requests.post(url, json=payload, headers=headers)
     if response.status_code == 200:
         data = response.json()
-        history = data['data']['history']
+        block_number = data.get("data", {}).get("block_num")
+
+        # Query the balance at the closest block
+        previous_day_balance_info = substrate.query(module='System', storage_function='Account', params=[address], block_hash=substrate.get_block_hash(block_number))
+        previous_day_balance = previous_day_balance_info.value['data']['free']
+
+        # Query the current balance
+        current_balance_info = substrate.query(module='System', storage_function='Account', params=[address])
+        current_balance = current_balance_info.value['data']['free']
+
+        # Calculate the balance gain and adjust for token decimal places
+        gain = max(0, current_balance - previous_day_balance)  # Ensure the result is non-negative
+        gain_adjusted = gain / 10**18  # Adjust for token's decimal places
         
-        if history:
-            # Assume the last entry in the history is the balance at the end of the previous day
-            latest_history_balance = int(history[-1]['balance'])
-            
-            # Fetch the current balance directly from the node
-            current_balance_info = substrate.query("System", "Account", [address])
-            current_balance = int(current_balance_info.value["data"]["free"])
-            
-            # Calculate daily gains by comparing the current balance to the latest balance from history
-            # Convert both balances to a decimal representation based on the token's decimals
-            token_decimals = substrate.properties.get('tokenDecimals', 18)  # Defaulting to 18 if not specified
-            daily_gains = (current_balance - latest_history_balance) / 10**token_decimals
-            return daily_gains
+        # Format the result to show two decimal places
+        gain_formatted = "{:.2f}".format(gain_adjusted)
+
+        return gain_formatted
     else:
-        logging.error(f"Failed to fetch daily gains for {address}: {response.status_code}, {response.text}")
-        return 0.0
+        return "0.00"
 
 
-def format_message(name: str, balance: float, daily_gains: float, balance_change: float, wallet_address: str, chart_url: str) -> Dict:
+def format_message(name: str, balance: float, daily_gains: str, balance_change: float, wallet_address: str, chart_url: str) -> Dict:
     timestamp = datetime.utcnow().isoformat() + 'Z'
     explorer_url = f"https://subspace.subscan.io/account/{wallet_address}?tab=balance_history"
     embed = {
@@ -79,7 +85,7 @@ def format_message(name: str, balance: float, daily_gains: float, balance_change
         "embeds": [{
             "title": name,
             "description": f"Balance: {balance:.2f} tSSC  (Change {balance_change:+.2f})\n"
-                           f"Gains Today: +{daily_gains:.2f} tSSC\n"
+                           f"Gains Today: +{daily_gains} tSSC\n"
                            f"[View on Subscan Explorer]({explorer_url})",
             "color": 16448250,
             "author": {
