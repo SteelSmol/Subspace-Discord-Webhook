@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def fetch_balance_history(address: str, days: int) -> list:
-    end_date = datetime.now(datetime.UTC)
+    end_date = datetime.now(datetime.timezone.utc)
     start_date = end_date - timedelta(days=days)
 
     url = "https://subspace.webapi.subscan.io/api/scan/account/balance_history"
