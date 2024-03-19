@@ -3,12 +3,13 @@ from datetime import datetime, timedelta
 import json
 from urllib.parse import quote
 from dotenv import load_dotenv
+import pytz
 
 # Load environment variables from .env file
 load_dotenv()
 
 def fetch_balance_history(address: str, days: int) -> list:
-    end_date = datetime.now(datetime.timezone.utc)
+    end_date = datetime.now(pytz.utc)
     start_date = end_date - timedelta(days=days)
 
     url = "https://subspace.webapi.subscan.io/api/scan/account/balance_history"
@@ -93,4 +94,3 @@ def generate_quickchart_url(address: str, name: str, days: int = 7) -> str:
     quickchart_url = f"https://quickchart.io/chart?c={encoded_chart_config}"
 
     return quickchart_url
-
